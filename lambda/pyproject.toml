@@ -20,21 +20,15 @@ moto = { version = ">=5.0", extras = ["dynamodb"] }
 fakeredis = ">=2.26"
 boto3-stubs = { version = ">=1.35", extras = ["dynamodb"] }
 mypy = ">=1.13"
-ruff = ">=0.8"
+black = ">=24.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.ruff]
-target-version = "py313"
+[tool.black]
+target-version = ["py313"]
 line-length = 100
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "N", "UP", "ANN", "S", "B", "C4", "RUF"]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "ANN401"]
 
 [tool.mypy]
 strict = true
@@ -52,6 +46,5 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["integration: marks tests that call real AWS (deselect with -m 'not integration')"]
-
 
 

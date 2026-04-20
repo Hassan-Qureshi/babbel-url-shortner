@@ -14,10 +14,10 @@ install:
 	cd lambda && poetry install
 
 lint:
-	cd lambda && poetry run ruff check .
+	cd lambda && poetry run black --check .
 
 format:
-	cd lambda && poetry run ruff format .
+	cd lambda && poetry run black .
 
 # ---------------------------------------------------------------------------
 # Lambda zip packaging
