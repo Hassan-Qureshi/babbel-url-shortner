@@ -1,5 +1,6 @@
 """DynamoDB store."""
 
+import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -11,13 +12,11 @@ from botocore.exceptions import ClientError
 from shared.exceptions import ConflictError
 from shared.models import URLRecord
 
-import logging
-
 logger = logging.getLogger()
 
 
 class DynamoStore:
-    def __init__(self, table_name: str, client: Any = None) -> None:
+    def __init__(self, table_name, client) -> None:
         resource = client or boto3.resource("dynamodb")
         self._table = resource.Table(table_name)
 

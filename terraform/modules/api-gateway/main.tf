@@ -131,6 +131,7 @@ resource "aws_lambda_permission" "shorten" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = var.shorten_lambda_function_name
+  qualifier     = "live"
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
 }
@@ -139,6 +140,7 @@ resource "aws_lambda_permission" "redirect" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = var.redirect_lambda_function_name
+  qualifier     = "live"
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
 }
@@ -184,4 +186,3 @@ resource "aws_api_gateway_usage_plan_key" "this" {
   key_type      = "API_KEY"
   usage_plan_id = aws_api_gateway_usage_plan.this.id
 }
-

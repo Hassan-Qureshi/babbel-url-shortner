@@ -5,7 +5,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, HttpUrl, field_validator
 
-
 type Code = str
 """Type alias for a short code string."""
 
@@ -33,9 +32,9 @@ class ShortenRequest(BaseModel):
     @field_validator("custom_code")
     @classmethod
     def validate_custom_code(cls, v: str | None) -> str | None:
-        """Custom code must be 4–20 alphanumeric chars or hyphens."""
+        """Custom code must be 4-20 alphanumeric chars or hyphens."""
         if v is not None and not re.fullmatch(r"[a-zA-Z0-9-]{4,20}", v):
-            msg = "custom_code must be 4–20 alphanumeric chars or hyphens"
+            msg = "custom_code must be 4-20 alphanumeric chars or hyphens"
             raise ValueError(msg)
         return v
 
