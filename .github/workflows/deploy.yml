@@ -100,7 +100,7 @@ jobs:
               -d '{"url":"https://example.com/smoke-test"}' || exit 1
             echo "Smoke test passed"
           else
-            echo "Skipping smoke test — no API URL available"
+            echo "Skipping smoke test no API URL available"
           fi
 
   # ---------------------------------------------------------------------------

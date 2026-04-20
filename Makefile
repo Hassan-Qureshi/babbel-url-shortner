@@ -1,6 +1,10 @@
-.PHONY: install lint format clean zip apply deploy
+.PHONY: install lint format clean zip apply deploy deploy-shorten deploy-redirect
 
 ENV ?= dev
+AWS ?= aws
+PYTHON ?= python3
+LAMBDA_PLATFORM ?= manylinux2014_aarch64
+LAMBDA_PYTHON_VERSION ?= 3.13
 
 # ---------------------------------------------------------------------------
 # Python
@@ -25,9 +29,15 @@ clean:
 zip: clean
 	mkdir -p lambda/build lambda/dist
 	# install dependencies
-	poetry self add poetry-plugin-export
 	cd lambda && poetry export --without-hashes -f requirements.txt -o requirements.txt
-	pip install -t lambda/build -r lambda/requirements.txt
+	$(PYTHON) -m pip install \
+		--upgrade \
+		--only-binary=:all: \
+		--platform $(LAMBDA_PLATFORM) \
+		--implementation cp \
+		--python-version $(LAMBDA_PYTHON_VERSION) \
+		--target lambda/build \
+		-r lambda/requirements.txt
 	rm lambda/requirements.txt
 	# cleanup unnecessary files from dependencies
 	find lambda/build -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
@@ -59,5 +69,31 @@ apply: zip
 # ---------------------------------------------------------------------------
 
 deploy: zip
-	aws lambda update-function-code --function-name url-shortener-shorten-$(ENV) --zip-file fileb://lambda/dist/shorten.zip --publish
-	aws lambda update-function-code --function-name url-shortener-redirect-$(ENV) --zip-file fileb://lambda/dist/redirect.zip --publish
+	$(MAKE) deploy-shorten ENV=$(ENV)
+	$(MAKE) deploy-redirect ENV=$(ENV)
+
+deploy-shorten:
+	@VERSION=`$(AWS) lambda update-function-code \
+		--function-name url-shortener-shorten-$(ENV) \
+		--zip-file fileb://lambda/dist/shorten.zip \
+		--publish \
+		--query Version \
+		--output text`; \
+	$(AWS) lambda update-alias \
+		--function-name url-shortener-shorten-$(ENV) \
+		--name live \
+		--function-version $$VERSION; \
+	echo "shorten deployed: version $$VERSION"
+
+deploy-redirect:
+	@VERSION=`$(AWS) lambda update-function-code \
+		--function-name url-shortener-redirect-$(ENV) \
+		--zip-file fileb://lambda/dist/redirect.zip \
+		--publish \
+		--query Version \
+		--output text`; \
+	$(AWS) lambda update-alias \
+		--function-name url-shortener-redirect-$(ENV) \
+		--name live \
+		--function-version $$VERSION; \
+	echo "redirect deployed: version $$VERSION"

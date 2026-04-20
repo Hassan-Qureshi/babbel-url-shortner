@@ -1,0 +1,1 @@
+"""Shorten Lambda handler package."""

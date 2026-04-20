@@ -24,7 +24,7 @@ resource "aws_vpc" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# Public subnets — 2, one per AZ
+# Public subnets 2, one per AZ
 # -----------------------------------------------------------------------------
 
 resource "aws_subnet" "public" {
@@ -42,7 +42,7 @@ resource "aws_subnet" "public" {
 }
 
 # -----------------------------------------------------------------------------
-# Private subnets — 2, one per AZ
+# Private subnets 2, one per AZ
 # -----------------------------------------------------------------------------
 
 resource "aws_subnet" "private" {
@@ -71,7 +71,7 @@ resource "aws_internet_gateway" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# NAT Gateway — single, in the first public subnet
+# NAT Gatewa single, in the first public subnet
 # -----------------------------------------------------------------------------
 
 resource "aws_eip" "nat" {

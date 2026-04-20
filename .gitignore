@@ -17,7 +17,7 @@ venv/
 lambda/dist/
 lambda/staging/
 
-# Poetry — lock file should be committed, but list here as reference
+# Poetry lock file should be committed, but list here as reference
 # poetry.lock
 
 # IDE

@@ -89,7 +89,7 @@ jobs:
         run: |
           echo "Waiting 5s for alias propagation..."
           sleep 5
-          # Quick health check — invoke the shorten function
+          # Quick health check invoke the shorten function
           aws lambda invoke \
             --function-name "url-shortener-shorten-${{ inputs.environment }}" \
             --qualifier live \
@@ -100,6 +100,6 @@ jobs:
           if [ "${STATUS}" = "201" ] || [ "${STATUS}" = "400" ]; then
             echo "✅ Smoke test passed (function is responding)"
           else
-            echo "⚠️  Unexpected status ${STATUS} — check logs"
+            echo "⚠️  Unexpected status ${STATUS} check logs"
           fi
 

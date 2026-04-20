@@ -164,7 +164,7 @@ resource "aws_cloudwatch_dashboard" "this" {
         width  = 12
         height = 6
         properties = {
-          title = "${name} — Invocations & Errors"
+          title = "${name} Invocations & Errors"
           metrics = [
             ["AWS/Lambda", "Invocations", "FunctionName", fn_name, { stat = "Sum" }],
             ["AWS/Lambda", "Errors", "FunctionName", fn_name, { stat = "Sum", color = "#d62728" }],
@@ -182,7 +182,7 @@ resource "aws_cloudwatch_dashboard" "this" {
         width  = 12
         height = 6
         properties = {
-          title = "${name} — Duration"
+          title = "${name} Duration"
           metrics = [
             ["AWS/Lambda", "Duration", "FunctionName", fn_name, { stat = "p50" }],
             ["AWS/Lambda", "Duration", "FunctionName", fn_name, { stat = "p99", color = "#d62728" }],
@@ -192,7 +192,7 @@ resource "aws_cloudwatch_dashboard" "this" {
           view   = "timeSeries"
         }
       }],
-      # Custom metrics — cache hits/misses + URLs created
+      # Custom metrics cache hits/misses + URLs created
       [{
         type   = "metric"
         x      = 0
@@ -251,7 +251,7 @@ resource "aws_cloudwatch_dashboard" "this" {
         width  = 12
         height = 6
         properties = {
-          title = "DynamoDB — Consumed Capacity & Throttles"
+          title = "DynamoDB Consumed Capacity & Throttles"
           metrics = [
             ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", var.dynamodb_table_name, { stat = "Sum" }],
             ["AWS/DynamoDB", "ConsumedWriteCapacityUnits", "TableName", var.dynamodb_table_name, { stat = "Sum" }],

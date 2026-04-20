@@ -419,8 +419,8 @@ Lambda (in VPC mode) and ElastiCache both require a VPC with private subnets. We
 
 ### Alternatives Considered
 
-1. **VPC per environment** — each `terraform apply` creates its own VPC, subnets, NAT Gateway.
-2. **Single shared VPC** — one VPC created once, all environments reference it via remote state.
+1. **VPC per environment**: each `terraform apply` creates its own VPC, subnets, NAT Gateway.
+2. **Single shared VPC**: one VPC created once, all environments reference it via remote state.
 
 ### Decision
 
