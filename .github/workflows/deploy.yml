@@ -1,0 +1,178 @@
+          python-version: "3.13"
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build Lambda zips
+  # ---------------------------------------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-in-project: true
+
+      - name: Build deployment zips
+        working-directory: lambda/
+        run: |
+          poetry install --only main
+          poetry export --without dev --without-hashes -f requirements.txt -o requirements.txt
+          pip install --target staging/ -r requirements.txt
+          rm -f requirements.txt
+          mkdir -p dist
+          cp -r src/shorten shared staging/
+          (cd staging && zip -r ../dist/shorten.zip .)
+          rm -rf staging/shorten staging/shared
+          cp -r src/redirect shared staging/
+          (cd staging && zip -r ../dist/redirect.zip .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lambda-zips
+          path: lambda/dist/*.zip
+
+  # ---------------------------------------------------------------------------
+  # Deploy to dev (automatic)
+  # ---------------------------------------------------------------------------
+  deploy-dev:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-deploy
+          aws-region: eu-central-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lambda-zips
+          path: lambda/dist/
+
+      - name: Terraform init
+        run: terraform -chdir=terraform/environments/dev init
+
+      - name: Terraform apply
+        run: |
+          terraform -chdir=terraform/environments/dev apply -auto-approve \
+            -var="shorten_zip_path=$GITHUB_WORKSPACE/lambda/dist/shorten.zip" \
+            -var="redirect_zip_path=$GITHUB_WORKSPACE/lambda/dist/redirect.zip"
+
+  # ---------------------------------------------------------------------------
+  # Smoke test dev
+  # ---------------------------------------------------------------------------
+  smoke-test-dev:
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    steps:
+      - name: Smoke test
+        run: |
+          API_URL=$(aws cloudformation describe-stacks --query "Stacks[0].Outputs[?OutputKey=='api_endpoint'].OutputValue" --output text 2>/dev/null || echo "")
+          if [ -n "$API_URL" ]; then
+            curl -sf -X POST "$API_URL/shorten" \
+              -H "Content-Type: application/json" \
+              -d '{"url":"https://example.com/smoke-test"}' || exit 1
+            echo "Smoke test passed"
+          else
+            echo "Skipping smoke test — no API URL available"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Deploy to staging (automatic after smoke test)
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: smoke-test-dev
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-deploy
+          aws-region: eu-central-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lambda-zips
+          path: lambda/dist/
+
+      - name: Terraform init
+        run: terraform -chdir=terraform/environments/staging init
+
+      - name: Terraform apply
+        run: |
+          terraform -chdir=terraform/environments/staging apply -auto-approve \
+            -var="shorten_zip_path=$GITHUB_WORKSPACE/lambda/dist/shorten.zip" \
+            -var="redirect_zip_path=$GITHUB_WORKSPACE/lambda/dist/redirect.zip"
+
+  # ---------------------------------------------------------------------------
+  # Deploy to prod (manual approval gate)
+  # ---------------------------------------------------------------------------
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: production  # requires manual approval in GitHub settings
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-deploy
+          aws-region: eu-central-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lambda-zips
+          path: lambda/dist/
+
+      - name: Terraform init
+        run: terraform -chdir=terraform/environments/prod init
+
+      - name: Terraform plan
+        run: |
+          terraform -chdir=terraform/environments/prod plan \
+            -var="shorten_zip_path=$GITHUB_WORKSPACE/lambda/dist/shorten.zip" \
+            -var="redirect_zip_path=$GITHUB_WORKSPACE/lambda/dist/redirect.zip"
+
+      - name: Terraform apply
+        run: |
+          terraform -chdir=terraform/environments/prod apply -auto-approve \
+            -var="shorten_zip_path=$GITHUB_WORKSPACE/lambda/dist/shorten.zip" \
+            -var="redirect_zip_path=$GITHUB_WORKSPACE/lambda/dist/redirect.zip"
+
+

@@ -31,10 +31,7 @@ resource "aws_lambda_function" "this" {
 
   environment {
     variables = merge(each.value.environment, {
-      ENVIRONMENT                  = var.environment
-      LOG_LEVEL                    = "INFO"
-      POWERTOOLS_SERVICE_NAME      = "url-shortener"
-      POWERTOOLS_METRICS_NAMESPACE = "URLShortener"
+      ENVIRONMENT = var.environment
     })
   }
 

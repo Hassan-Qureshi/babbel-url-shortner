@@ -40,48 +40,56 @@ resource "aws_wafv2_web_acl" "this" {
   }
 
   # AWS managed common rule set
-  rule {
-    name     = "aws-common-rules"
-    priority = 2
+  dynamic "rule" {
+    for_each = var.enable_waf_common_rules ? [1] : []
 
-    override_action {
-      none {}
-    }
+    content {
+      name     = "aws-common-rules"
+      priority = 2
 
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesCommonRuleSet"
-        vendor_name = "AWS"
+      override_action {
+        none {}
       }
-    }
 
-    visibility_config {
-      sampled_requests_enabled   = true
-      cloudwatch_metrics_enabled = true
-      metric_name                = "url-shortener-common-rules-${var.environment}"
+      statement {
+        managed_rule_group_statement {
+          name        = "AWSManagedRulesCommonRuleSet"
+          vendor_name = "AWS"
+        }
+      }
+
+      visibility_config {
+        sampled_requests_enabled   = true
+        cloudwatch_metrics_enabled = true
+        metric_name                = "url-shortener-common-rules-${var.environment}"
+      }
     }
   }
 
   # AWS managed IP reputation list
-  rule {
-    name     = "aws-ip-reputation"
-    priority = 3
+  dynamic "rule" {
+    for_each = var.enable_waf_ip_reputation ? [1] : []
 
-    override_action {
-      none {}
-    }
+    content {
+      name     = "aws-ip-reputation"
+      priority = 3
 
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesAmazonIpReputationList"
-        vendor_name = "AWS"
+      override_action {
+        none {}
       }
-    }
 
-    visibility_config {
-      sampled_requests_enabled   = true
-      cloudwatch_metrics_enabled = true
-      metric_name                = "url-shortener-ip-reputation-${var.environment}"
+      statement {
+        managed_rule_group_statement {
+          name        = "AWSManagedRulesAmazonIpReputationList"
+          vendor_name = "AWS"
+        }
+      }
+
+      visibility_config {
+        sampled_requests_enabled   = true
+        cloudwatch_metrics_enabled = true
+        metric_name                = "url-shortener-ip-reputation-${var.environment}"
+      }
     }
   }
 

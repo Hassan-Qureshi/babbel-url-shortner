@@ -1,0 +1,1 @@
+"""Redirect Lambda handler package."""

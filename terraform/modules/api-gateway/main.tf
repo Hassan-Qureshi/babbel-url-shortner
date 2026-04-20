@@ -119,7 +119,7 @@ resource "aws_api_gateway_method_settings" "this" {
     throttling_burst_limit = var.throttle_burst_limit
     throttling_rate_limit  = var.throttle_rate_limit
     metrics_enabled        = true
-    logging_level          = "INFO"
+    logging_level          = "OFF" # for now its is not needed since we already have logging in Lambda, and it can be costly at scale. We can enable it later if needed.
   }
 }
 

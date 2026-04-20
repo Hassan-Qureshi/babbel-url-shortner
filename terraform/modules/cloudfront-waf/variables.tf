@@ -31,15 +31,27 @@ variable "acm_certificate_arn" {
 }
 
 variable "enable_waf" {
-  description = "Whether to attach a WAF WebACL to the CloudFront distribution"
+  description = "Whether to attach a WAF WebACL to the CloudFront distribution only enabled in production environment"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "waf_rate_limit" {
   description = "Maximum requests per 5-minute window per IP before rate-limiting kicks in"
   type        = number
   default     = 2000
+}
+
+variable "enable_waf_common_rules" {
+  description = "Whether to enable the AWS Managed Common Rule Set (OWASP top 10)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_waf_ip_reputation" {
+  description = "Whether to enable the AWS Managed IP Reputation List"
+  type        = bool
+  default     = false
 }
 
 variable "waf_blocked_countries" {
