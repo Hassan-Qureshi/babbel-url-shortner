@@ -449,9 +449,11 @@ The VPC contains:
 
 ## Revision History
 
-| Date       | ADR                     | Change |
-|------------|-------------------------|--------|
-| 2026-04-19 | ADR-001 through ADR-011 | Initial creation |
-
+| Date       | ADR               | Change                                                                               |
+|------------|-------------------|--------------------------------------------------------------------------------------|
+| 2026-04-19 | ADR-000           | Initial creation with VPC created centrally                                          |
+| 2026-04-19 | ADR-001 & ADR-002 | Added the modules for lambda and logic for read through cache                        |
+| 2026-04-19 | ADR-004           | Decided to use dynamodb as datastore and added the infra implementation & code logic |
+| 2026-04-19 | ADR-003           | Code fixes in case of cache miss or any errors                                       |
 
 
