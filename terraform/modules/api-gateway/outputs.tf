@@ -18,3 +18,13 @@ output "stage_name" {
   value       = aws_api_gateway_stage.this.stage_name
 }
 
+output "api_key_id" {
+  description = "ID of the API key"
+  value       = aws_api_gateway_api_key.this.id
+}
+
+output "api_key_value" {
+  description = "Value of the API key (pass as x-api-key header to POST /shorten)"
+  value       = aws_api_gateway_api_key.this.value
+  sensitive   = true
+}

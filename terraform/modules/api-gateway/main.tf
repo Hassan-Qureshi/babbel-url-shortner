@@ -28,10 +28,11 @@ resource "aws_api_gateway_resource" "shorten" {
 }
 
 resource "aws_api_gateway_method" "shorten_post" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  resource_id   = aws_api_gateway_resource.shorten.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.this.id
+  resource_id      = aws_api_gateway_resource.shorten.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "shorten_post" {
@@ -84,6 +85,7 @@ resource "aws_api_gateway_deployment" "this" {
     redeployment = sha1(jsonencode([
       aws_api_gateway_resource.shorten.id,
       aws_api_gateway_method.shorten_post.id,
+      aws_api_gateway_method.shorten_post.api_key_required,
       aws_api_gateway_integration.shorten_post.id,
       aws_api_gateway_resource.redirect.id,
       aws_api_gateway_method.redirect_get.id,
@@ -139,5 +141,47 @@ resource "aws_lambda_permission" "redirect" {
   function_name = var.redirect_lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
+}
+
+# -----------------------------------------------------------------------------
+# API Key + Usage Plan POST /shorten requires x-api-key header
+# GET /{code} remains public (no key needed)
+# -----------------------------------------------------------------------------
+
+resource "aws_api_gateway_api_key" "this" {
+  name    = "url-shortener-${var.environment}"
+  enabled = true
+
+  tags = merge(var.tags, {
+    Environment = var.environment
+    Project     = "url-shortener"
+    ManagedBy   = "terraform"
+  })
+}
+
+resource "aws_api_gateway_usage_plan" "this" {
+  name = "url-shortener-${var.environment}"
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.this.id
+    stage  = aws_api_gateway_stage.this.stage_name
+  }
+
+  throttle_settings {
+    burst_limit = var.throttle_burst_limit
+    rate_limit  = var.throttle_rate_limit
+  }
+
+  tags = merge(var.tags, {
+    Environment = var.environment
+    Project     = "url-shortener"
+    ManagedBy   = "terraform"
+  })
+}
+
+resource "aws_api_gateway_usage_plan_key" "this" {
+  key_id        = aws_api_gateway_api_key.this.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.this.id
 }
 
