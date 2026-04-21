@@ -6,20 +6,20 @@ This document records the significant architectural decisions made for the URL s
 
 ## Table of Contents
 
-| #                                                           | Title | Status    |
-|-------------------------------------------------------------|-------|-----------|
-| [ADR-000](#adr-000-shared-vpc-as-a-prerequisite) | Shared VPC as a prerequisite | ✅ Decided |
-| [ADR-001](#adr-001-serverless-on-aws-lambda)                | Serverless on AWS Lambda | ✅ Decided |
-| [ADR-002](#adr-002-cache-first-redirect-path)               | Cache-first redirect path | ✅ Decided |
-| [ADR-003](#adr-003-redis-errors-are-swallowed)              | Redis errors are swallowed | ✅ Decided |
-| [ADR-004](#adr-004-dynamodb-as-primary-store)               | DynamoDB as primary store | ✅ Decided |
-| [ADR-005](#adr-005-csprng-short-code-generation)            | CSPRNG short code generation | ✅ Decided |
-| [ADR-006](#adr-006-fire-and-forget-hit-counters)            | Fire-and-forget hit counters | ✅ Decided |
-| [ADR-007](#adr-009-aws-lambda-powertools-for-observability) | AWS Lambda Powertools for observability | ✅ Decided |
-| [ADR-008](#adr-010-zip-deployment-on-arm64)                 | Zip deployment on arm64 | ✅ Decided |
-| [ADR-009](#adr-012-terraform-module-hierarchy)              | Terraform module hierarchy | ✅ Decided |
-| [ADR-010](#adr-013-cloudfront-plus-waf-at-the-edge)         | CloudFront + WAF at the edge | ✅ Decided |
-| [ADR-011](#adr-014-multi-environment-promotion-pipeline)    | Multi-environment promotion pipeline | ✅ Decided |
+| #                                                           | Title | Status                |
+|-------------------------------------------------------------|-------|-----------------------|
+| [ADR-000](#adr-000-shared-vpc-as-a-prerequisite) | Shared VPC as a prerequisite | ✅ Decided             |
+| [ADR-001](#adr-001-serverless-on-aws-lambda)                | Serverless on AWS Lambda | ✅ Decided             |
+| [ADR-002](#adr-002-cache-first-redirect-path)               | Cache-first redirect path | 🚧 Pending            |
+| [ADR-003](#adr-003-redis-errors-are-swallowed)              | Redis errors are swallowed | 🚧 PENDING for future |
+| [ADR-004](#adr-004-dynamodb-as-primary-store)               | DynamoDB as primary store | ✅ Decided             |
+| [ADR-005](#adr-005-csprng-short-code-generation)            | CSPRNG short code generation | ✅ Decided             |
+| [ADR-006](#adr-006-fire-and-forget-hit-counters)            | Fire-and-forget hit counters | ✅ Decided             |
+| [ADR-007](#adr-009-aws-lambda-powertools-for-observability) | AWS Lambda Powertools for observability | 🚧Pending             |
+| [ADR-008](#adr-010-zip-deployment-on-arm64)                 | Zip deployment on arm64 | ✅ Decided             |
+| [ADR-009](#adr-012-terraform-module-hierarchy)              | Terraform module hierarchy | ✅ Decided             |
+| [ADR-010](#adr-013-cloudfront-plus-waf-at-the-edge)         | CloudFront + WAF at the edge | ✅ Decided             |
+| [ADR-011](#adr-014-multi-environment-promotion-pipeline)    | Multi-environment promotion pipeline | ✅ Decided             |
 
 ---
 
@@ -108,7 +108,7 @@ Use **AWS Lambda** with the native Python runtime and zip deployment.
 
 ## ADR-002: Cache-first redirect path
 
-**Status:** Accepted
+**Status:** Pending
 
 ### Context
 
@@ -134,7 +134,7 @@ Request → Redis GET → hit? → 301 redirect
 
 ## ADR-003: Redis errors are swallowed
 
-**Status:** Accepted
+**Status:** Pending for future
 
 ### Context
 
@@ -262,7 +262,7 @@ Hit-count increments run in a **Python daemon thread** (`threading.Thread(daemon
 
 ## ADR-007: AWS Lambda Powertools for observability
 
-**Status:** Accepted
+**Status:** PENDING
 
 ### Context
 

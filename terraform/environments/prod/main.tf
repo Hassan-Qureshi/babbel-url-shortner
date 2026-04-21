@@ -69,7 +69,7 @@ module "lambda" {
     shorten = {
       handler         = "shorten.handler.handler"
       zip_path        = var.shorten_zip_path
-      memory_mb       = 1024
+      memory_mb       = 256
       timeout_seconds = 10
       environment = {
         DYNAMODB_TABLE = module.dynamodb.table_name

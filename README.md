@@ -289,8 +289,8 @@ aws logs tail /aws/lambda/url-shortener-redirect-dev --follow
 
 | Environment | Lambda Memory | WAF | Alarms | Price Class | Notes |
 |-------------|---------------|-----|--------|-------------|-------|
-| **dev** | 256 MB | ✅ | ✅ (errors + DynamoDB throttles) | `PriceClass_100` | Simple monitoring, no latency alarm |
-| **prod** | 1 024 MB | ✅ (rate-limit + AWS managed rules + geo-block) | ✅ (errors + 500 ms p99 + DynamoDB throttles) | `PriceClass_All` | Tighter alerts for higher traffic |
+| **dev** | 256 MB        | ✅ | ✅ (errors + DynamoDB throttles) | `PriceClass_100` | Simple monitoring, no latency alarm |
+| **prod** | 256 MB        | ✅ (rate-limit + AWS managed rules + geo-block) | ✅ (errors + 500 ms p99 + DynamoDB throttles) | `PriceClass_All` | Tighter alerts for higher traffic |
 
 ---
 
