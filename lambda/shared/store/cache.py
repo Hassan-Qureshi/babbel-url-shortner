@@ -30,7 +30,7 @@ class RedisCache:
         )
 
     @classmethod
-    def from_client(cls, client) -> RedisCache:
+    def from_client(cls, client: object) -> RedisCache:
         """Create a ``RedisCache`` wrapping an existing Redis client (for tests)."""
         instance = cls.__new__(cls)
         instance._client = client

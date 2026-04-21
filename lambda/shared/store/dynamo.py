@@ -16,8 +16,8 @@ logger = logging.getLogger()
 
 
 class DynamoStore:
-    def __init__(self, table_name, client) -> None:
-        resource = client or boto3.resource("dynamodb")
+    def __init__(self, table_name: str, client: object | None = None) -> None:
+        resource: Any = client or boto3.resource("dynamodb")
         self._table = resource.Table(table_name)
 
     def put(self, record: URLRecord) -> None:

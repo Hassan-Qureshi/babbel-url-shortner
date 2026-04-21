@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 _MAX_RETRIES = 3
 
 
-def handler(event, context):
+def handler(event: dict[str, Any], context: object) -> dict[str, Any]:
     """Lambda entry point for POST /shorten."""
     try:
         body = json.loads(event.get("body") or "{}")
