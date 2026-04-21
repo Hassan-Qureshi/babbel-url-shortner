@@ -26,9 +26,10 @@ This document records the significant architectural decisions made for the URL s
 ## Current Implementation Notes
 
 - The current application path is intentionally **DynamoDB-first** to keep the Lambda code simple and easy to debug.
-- The Redis module remains in Terraform for future use, but it is not part of the active request path in the current simplified implementation.
+- The Redis module remains in the repository for future use, but it is not part of the active `dev` or `prod` request path in the current simplified implementation.
 - Monitoring in `dev` is intentionally basic: CloudWatch dashboard, Lambda error alarms, and DynamoDB throttle alarms.
 - Lambda p99 latency alarms are reserved for higher-signal environments such as `prod`.
+- `prod` enables CloudFront WAF rate limiting together with AWS managed common-rule and IP-reputation rule sets.
 
 ---
 

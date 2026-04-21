@@ -39,6 +39,103 @@ terraform init && terraform apply
 
 ---
 
+## Setup From Scratch
+
+Use this when you want to bring the project up in a fresh AWS account or add a new environment.
+
+### 1. Clone and install dependencies
+
+```bash
+git clone <your-repo-url>
+cd url-shortner
+make install
+```
+
+### 2. Configure AWS locally
+
+```bash
+aws configure
+aws sts get-caller-identity
+```
+
+### 3. Create the shared VPC first
+
+This project expects the shared VPC in `terraform/vpc/` to exist before any environment is applied.
+
+```bash
+terraform -chdir=terraform/vpc init
+terraform -chdir=terraform/vpc apply
+```
+
+### 4. Build the Lambda deployment packages
+
+```bash
+make zip
+```
+
+### 5. Prepare the target environment
+
+Pick an existing environment like `dev` or `prod`, or copy one to create a new one.
+
+```bash
+cp -R terraform/environments/dev terraform/environments/<new-env>
+```
+
+Then update at least these files in `terraform/environments/<new-env>/`:
+
+- `backend.tf`: use a unique S3 state key such as `<new-env>/terraform.tfstate`
+- `variables.tf`: set the default `environment` if needed
+- `terraform.tfvars`: set `environment`, `alarm_email`, `base_url`, and any environment-specific values
+- `main.tf`: keep sizing and feature flags appropriate for the new environment
+
+Important:
+
+- `base_url` should be the public URL users should receive in responses
+- use the CloudFront domain or a custom domain
+- do not use the API Gateway `execute-api` hostname
+
+### 6. Apply the environment
+
+```bash
+make apply ENV=<new-env>
+```
+
+### 7. Check the important outputs
+
+```bash
+terraform -chdir=terraform/environments/<new-env> output
+```
+
+For `dev`, also get the API key:
+
+```bash
+terraform -chdir=terraform/environments/dev output -raw api_key_value
+```
+
+### 8. Verify from the console
+
+- Lambda: both functions exist and the `live` alias points to a version
+- API Gateway: stage is deployed for the environment
+- CloudFront: distribution is deployed and points to API Gateway
+- DynamoDB: table exists
+- CloudWatch: dashboard exists
+- SNS: confirm the alarm email subscription if still pending
+
+### 9. Optional: GitHub Actions OIDC for CI/CD
+
+If this is a fresh AWS account, create the GitHub OIDC provider and deploy role before using the workflows.
+
+```bash
+terraform -chdir=terraform/bootstrap/github-actions init
+terraform -chdir=terraform/bootstrap/github-actions apply
+```
+
+Then add the role ARN to the GitHub repository variable:
+
+- `AWS_DEPLOY_ROLE_ARN`
+
+---
+
 ## Project Structure
 
 ```
@@ -77,7 +174,7 @@ url-shortner/
 │   │   └── monitoring/              # Dashboard, alarms, SNS topic
 │   └── environments/
 │       ├── dev/                     # Smallest sizing, basic alarms, DynamoDB-only app path
-│       └── prod/                    # Full WAF, tighter alarms, optional future cache capacity
+│       └── prod/                    # Full WAF, tighter alarms, DynamoDB-only app path
 │
 ├── .github/workflows/
 │   ├── ci.yml                       # PR: lint → type-check → zip build → terraform fmt → security scan
@@ -178,7 +275,7 @@ aws logs tail /aws/lambda/url-shortener-redirect-dev --follow
 | Environment | Lambda Memory | WAF | Alarms | Price Class | Notes |
 |-------------|---------------|-----|--------|-------------|-------|
 | **dev** | 256 MB | ✅ | ✅ (errors + DynamoDB throttles) | `PriceClass_100` | Simple monitoring, no latency alarm |
-| **prod** | 1 024 MB | ✅ (full rules + geo-block) | ✅ (errors + 500 ms p99 + DynamoDB throttles) | `PriceClass_All` | Tighter alerts for higher traffic |
+| **prod** | 1 024 MB | ✅ (rate-limit + AWS managed rules + geo-block) | ✅ (errors + 500 ms p99 + DynamoDB throttles) | `PriceClass_All` | Tighter alerts for higher traffic |
 
 ---
 
@@ -201,7 +298,7 @@ Push to main
 ## Monitoring
 
 - **Dev:** CloudWatch dashboard, Lambda error alarms, DynamoDB throttle alarm, SNS email notifications
-- **Prod:** Same baseline alerts plus Lambda p99 latency alarms
+- **Prod:** Same baseline alerts plus Lambda p99 latency alarms and full WAF managed rules
 - **Console check:** CloudWatch → Dashboards → `url-shortener-dev`
 - **Alarm email:** confirm the SNS subscription email once after the first `terraform apply`
 
