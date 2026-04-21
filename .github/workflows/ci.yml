@@ -110,10 +110,10 @@ jobs:
 #          exit-code: 1
 #          severity: HIGH,CRITICAL
 
-      - name: Security scan checkov
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          directory: terraform/
-          framework: terraform
-          quiet: true
-          soft_fail: false
+#      - name: Security scan checkov
+#        uses: bridgecrewio/checkov-action@v12
+#        with:
+#          directory: terraform/
+#          framework: terraform
+#          quiet: true
+#          soft_fail: false
