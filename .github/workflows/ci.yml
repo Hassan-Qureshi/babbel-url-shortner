@@ -73,7 +73,7 @@ jobs:
         with:
           name: lambda-zips
           path: lambda/dist/*.zip
-          retention-days: 7
+          retention-days: 7 # can be adjusted as needed, but no need to keep these around for long for this assignment
 
   # ---------------------------------------------------------------------------
   # Terraform fmt, validate, lint, security scan
@@ -110,13 +110,10 @@ jobs:
           exit-code: 1
           severity: HIGH,CRITICAL
 
-      - name: Security scan  checkov
+      - name: Security scan checkov
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: terraform/
           framework: terraform
           quiet: true
           soft_fail: false
-
-
-
