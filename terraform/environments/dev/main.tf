@@ -92,7 +92,7 @@ module "lambda" {
       environment = {
         DYNAMODB_TABLE = module.dynamodb.table_name
         # REDIS_ENDPOINT = module.elasticache.primary_endpoint
-        BASE_URL       = var.base_url
+        BASE_URL = var.base_url
       }
     }
     redirect = {
@@ -103,7 +103,7 @@ module "lambda" {
       environment = {
         DYNAMODB_TABLE = module.dynamodb.table_name
         # REDIS_ENDPOINT = module.elasticache.primary_endpoint
-        BASE_URL       = var.base_url
+        BASE_URL = var.base_url
       }
     }
   }
@@ -141,7 +141,7 @@ module "cloudfront" {
     aws.us_east_1 = aws.us_east_1
   }
 
-  environment        = var.environment
+  environment = var.environment
   # Remove protocol and stage from API Gateway endpoint to get the base domain for CloudFront
   api_gateway_domain = replace(replace(module.api_gateway.api_endpoint, "/^https?:\\/\\//", ""), "/${var.environment}", "")
   api_gateway_stage  = var.environment
