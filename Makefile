@@ -29,6 +29,7 @@ clean:
 zip: clean
 	mkdir -p lambda/build lambda/dist
 	# install dependencies
+	cd lambda && poetry self add poetry-plugin-export
 	cd lambda && poetry export --without-hashes -f requirements.txt -o requirements.txt
 	$(PYTHON) -m pip install \
 		--upgrade \
