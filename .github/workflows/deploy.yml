@@ -101,39 +101,9 @@ jobs:
           curl -sS -o /dev/null -D /tmp/redirect_headers "$API_URL/$CODE"
           grep -q '^HTTP/.* 301' /tmp/redirect_headers
 
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: smoke-test-dev
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: eu-central-1
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~1.9"
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: lambda-zips
-          path: lambda/dist/
-
-      - name: Terraform init
-        run: terraform -chdir=terraform/environments/staging init
-
-      - name: Terraform apply
-        run: |
-          terraform -chdir=terraform/environments/staging apply -auto-approve \
-            -var="shorten_zip_path=$GITHUB_WORKSPACE/lambda/dist/shorten.zip" \
-            -var="redirect_zip_path=$GITHUB_WORKSPACE/lambda/dist/redirect.zip"
-
   deploy-prod:
     runs-on: ubuntu-latest
-    needs: deploy-staging
+    needs: smoke-test-dev
     environment: production
     steps:
       - uses: actions/checkout@v4

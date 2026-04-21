@@ -9,7 +9,6 @@ on:
         type: choice
         options:
           - dev
-          - staging
           - prod
       target:
         description: "Function target to roll back"
@@ -24,7 +23,7 @@ on:
         required: true
         type: string
       smoke_test_code:
-        description: "Known short code for redirect smoke testing in prod (optional for dev/staging)"
+        description: "Known short code for redirect smoke testing in prod or redirect-only dev rollbacks"
         required: false
         type: string
 
@@ -141,7 +140,7 @@ jobs:
         run: terraform -chdir=terraform/environments/${{ inputs.environment }} init
 
       - name: Smoke test API
-        if: (inputs.environment == 'dev' || inputs.environment == 'staging') && (inputs.target == 'both' || inputs.target == 'shorten')
+        if: inputs.environment == 'dev' && (inputs.target == 'both' || inputs.target == 'shorten')
         run: |
           echo "Waiting 5s for alias propagation..."
           sleep 5
@@ -170,8 +169,8 @@ jobs:
 
           echo "✅ Smoke test passed"
 
-      - name: Smoke test redirect only non-prod
-        if: (inputs.environment == 'dev' || inputs.environment == 'staging') && inputs.target == 'redirect'
+      - name: Smoke test redirect only dev
+        if: inputs.environment == 'dev' && inputs.target == 'redirect'
         run: |
           echo "Waiting 5s for alias propagation..."
           sleep 5
