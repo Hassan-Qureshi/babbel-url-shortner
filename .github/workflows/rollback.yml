@@ -43,6 +43,23 @@ jobs:
           fi
           echo "Rolling back ${{ inputs.environment }} to version ${{ inputs.version }}"
 
+      - name: Debug role ARN
+        run: |
+          echo "ROLE_TO_ASSUME=${{ vars.AWS_DEPLOY_ROLE_ARN }}"
+          if [ -z "${{ vars.AWS_DEPLOY_ROLE_ARN }}" ]; then
+            echo "❌ AWS_DEPLOY_ROLE_ARN is empty"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import re
+
+          value = """${{ vars.AWS_DEPLOY_ROLE_ARN }}""".strip()
+          print(f"repr={value!r}")
+          if not re.fullmatch(r"arn:aws:iam::\d{12}:role/.+", value):
+              raise SystemExit("❌ AWS_DEPLOY_ROLE_ARN is not a valid IAM role ARN format")
+          print("✅ ARN format looks valid")
+          PY
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
