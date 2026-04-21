@@ -59,7 +59,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
 # -----------------------------------------------------------------------------
 
 resource "aws_cloudwatch_metric_alarm" "lambda_latency" {
-  for_each = var.enable_alarms ? var.lambda_function_names : {}
+  for_each = var.enable_alarms && var.enable_latency_alarms ? var.lambda_function_names : {}
 
   alarm_name          = "url-shortener-${each.key}-p99-latency-${var.environment}"
   alarm_description   = "Lambda ${each.key} p99 latency exceeded ${var.lambda_p99_latency_threshold_ms}ms"
@@ -184,59 +184,8 @@ resource "aws_cloudwatch_dashboard" "this" {
         properties = {
           title = "${name} Duration"
           metrics = [
-            ["AWS/Lambda", "Duration", "FunctionName", fn_name, { stat = "p50" }],
-            ["AWS/Lambda", "Duration", "FunctionName", fn_name, { stat = "p99", color = "#d62728" }],
-          ]
-          period = 300
-          region = "eu-central-1"
-          view   = "timeSeries"
-        }
-      }],
-      # Custom metrics cache hits/misses + URLs created
-      [{
-        type   = "metric"
-        x      = 0
-        y      = 12
-        width  = 12
-        height = 6
-        properties = {
-          title = "Cache Hit / Miss"
-          metrics = [
-            ["URLShortener", "CacheHit", { stat = "Sum" }],
-            ["URLShortener", "CacheMiss", { stat = "Sum", color = "#d62728" }],
-          ]
-          period = 300
-          region = "eu-central-1"
-          view   = "timeSeries"
-        }
-      }],
-      [{
-        type   = "metric"
-        x      = 12
-        y      = 12
-        width  = 12
-        height = 6
-        properties = {
-          title = "URLs Created"
-          metrics = [
-            ["URLShortener", "URLsCreated", { stat = "Sum" }],
-          ]
-          period = 300
-          region = "eu-central-1"
-          view   = "timeSeries"
-        }
-      }],
-      # Cold starts
-      [{
-        type   = "metric"
-        x      = 0
-        y      = 18
-        width  = 12
-        height = 6
-        properties = {
-          title = "Cold Starts"
-          metrics = [
-            ["URLShortener", "ColdStart", { stat = "Sum" }],
+            ["AWS/Lambda", "Duration", "FunctionName", fn_name, { stat = "Average" }],
+            ["AWS/Lambda", "Duration", "FunctionName", fn_name, { stat = "Maximum", color = "#d62728" }],
           ]
           period = 300
           region = "eu-central-1"
@@ -246,8 +195,8 @@ resource "aws_cloudwatch_dashboard" "this" {
       # DynamoDB
       [{
         type   = "metric"
-        x      = 12
-        y      = 18
+        x      = 0
+        y      = 12
         width  = 12
         height = 6
         properties = {
@@ -266,4 +215,3 @@ resource "aws_cloudwatch_dashboard" "this" {
     )
   })
 }
-

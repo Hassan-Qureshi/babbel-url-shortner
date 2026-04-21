@@ -23,6 +23,15 @@ This document records the significant architectural decisions made for the URL s
 
 ---
 
+## Current Implementation Notes
+
+- The current application path is intentionally **DynamoDB-first** to keep the Lambda code simple and easy to debug.
+- The Redis module remains in Terraform for future use, but it is not part of the active request path in the current simplified implementation.
+- Monitoring in `dev` is intentionally basic: CloudWatch dashboard, Lambda error alarms, and DynamoDB throttle alarms.
+- Lambda p99 latency alarms are reserved for higher-signal environments such as `prod`.
+
+---
+
 
 ## ADR-001: Shared VPC as a prerequisite
 
@@ -455,4 +464,3 @@ The VPC contains:
 | 2026-04-19 | ADR-001 & ADR-002 | Added the modules for lambda and logic for read through cache                        |
 | 2026-04-19 | ADR-004           | Decided to use dynamodb as datastore and added the infra implementation & code logic |
 | 2026-04-19 | ADR-003           | Code fixes in case of cache miss or any errors                                       |
-

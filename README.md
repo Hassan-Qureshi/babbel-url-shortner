@@ -14,9 +14,8 @@
 | **Edge** | WAF | IP rate-limiting (2000 req / 5 min), geo-blocking, AWS managed rule sets       |
 | **Compute** | API Gateway (REST) | Route `POST /shorten` and `GET /{code}` to Lambda                              |
 | **Compute** | Lambda × 2 | Python on arm64, zip deployment                                                |
-| **Data** | DynamoDB | A Primary store which has on-demand billing, TTL expiry                        |
-| **Data** | ElastiCache Redis | **Read-through** cache pattern is being used TLS in-transit, encryption at rest |
-| **Observe** | CloudWatch + SNS | Dashboard, error count alarms, email alerts |
+| **Data** | DynamoDB | Primary store for short codes, redirects, and TTL expiry                       |
+| **Observe** | CloudWatch + SNS | Simple dashboard, Lambda error alarms, DynamoDB throttle alerts, email alerts |
 
 ---
 
@@ -71,17 +70,17 @@ url-shortner/
 ├── terraform/                       # ── Infrastructure ──────────────────
 │   ├── modules/
 │   │   ├── dynamodb/                # Table, GSI, TTL, encryption, PITR
-│   │   ├── elasticache/             # Redis replication group, SG, TLS
+│   │   ├── elasticache/             # Redis module kept for future use
 │   │   ├── lambda/                  # Functions, IAM roles, VPC config
 │   │   ├── api-gateway/             # REST API, routes, throttling, Lambda perms
 │   │   ├── cloudfront-waf/          # Distribution, WAF rules, geo-block
 │   │   └── monitoring/              # Dashboard, alarms, SNS topic
 │   └── environments/
-│       ├── dev/                     # Smallest sizing, full WAF
-│       └── prod/                    # Multi-node Redis, PriceClass_All, tighter alarms
+│       ├── dev/                     # Smallest sizing, basic alarms, DynamoDB-only app path
+│       └── prod/                    # Full WAF, tighter alarms, optional future cache capacity
 │
 ├── .github/workflows/
-│   ├── ci.yml                       # PR: lint → type-check → test → tf validate → security scan
+│   ├── ci.yml                       # PR: lint → type-check → zip build → terraform fmt → security scan
 │   └── deploy.yml                   # Push to main: build → dev → smoke → prod (manual)
 │
 ├── Makefile                         # Developer commands
@@ -176,10 +175,10 @@ aws logs tail /aws/lambda/url-shortener-redirect-dev --follow
 
 ## Environments
 
-| Environment | Redis Nodes | Lambda Memory | WAF | Alarms | Price Class |
-|-------------|-------------|---------------|-----|--------|-------------|
-| **dev** | 1 × `cache.t4g.micro` | 256 MB | ✅ | ✅ (relaxed) | `PriceClass_100` |
-| **prod** | 2 × `cache.r7g.large` | 1 024 MB | ✅ (full rules + geo-block) | ✅ (tight: 3 errors, 500 ms p99) | `PriceClass_All` |
+| Environment | Lambda Memory | WAF | Alarms | Price Class | Notes |
+|-------------|---------------|-----|--------|-------------|-------|
+| **dev** | 256 MB | ✅ | ✅ (errors + DynamoDB throttles) | `PriceClass_100` | Simple monitoring, no latency alarm |
+| **prod** | 1 024 MB | ✅ (full rules + geo-block) | ✅ (errors + 500 ms p99 + DynamoDB throttles) | `PriceClass_All` | Tighter alerts for higher traffic |
 
 ---
 
@@ -196,6 +195,15 @@ Push to main
 - **Authentication:** OIDC federation, no long-lived AWS keys.
 - **Security gates:** `trivy config` + `checkov` must pass with zero HIGH/CRITICAL findings.
 - **Prod deploy:** Requires manual approval in the GitHub `production` environment.
+
+---
+
+## Monitoring
+
+- **Dev:** CloudWatch dashboard, Lambda error alarms, DynamoDB throttle alarm, SNS email notifications
+- **Prod:** Same baseline alerts plus Lambda p99 latency alarms
+- **Console check:** CloudWatch → Dashboards → `url-shortener-dev`
+- **Alarm email:** confirm the SNS subscription email once after the first `terraform apply`
 
 ---
 
@@ -272,9 +280,11 @@ terraform -chdir=terraform/environments/<env> apply -refresh-only
   - **IAM authorization**: for service-to-service calls using SigV4 signed requests
 - **Per-user URL management**: list, edit, delete URLs tied to an authenticated user
 - **Analytics dashboard**: click-through rates, geographic distribution, referrer tracking
+- **Richer monitoring**: add latency alarms in dev only if traffic justifies the noise, and add business metrics such as URLs created / redirect count
 - **Custom domains**: bring-your-own short domain with ACM certificates
 - **Rate limiting per user**: usage plans tied to authenticated identity, not just IP
 - **URL preview / unfurling**: `GET /{code}+` returns metadata instead of redirecting
 - **Bulk URL creation**: batch `POST /shorten` endpoint for importing many URLs at once
 - **X-Ray tracing**: flip `enable_xray_tracing = true` in Terraform and re-add `Tracer` to handlers
 - **Provisioned concurrency**: eliminate cold starts for prod redirect function
+- **Redis hot-path cache**: reintroduce Redis only when DynamoDB read latency or cost becomes a real bottleneck

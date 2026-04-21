@@ -30,6 +30,12 @@ variable "enable_alarms" {
   default     = true
 }
 
+variable "enable_latency_alarms" {
+  description = "Whether to create Lambda latency alarms"
+  type        = bool
+  default     = true
+}
+
 variable "lambda_error_threshold" {
   description = "Number of Lambda errors in a 5-minute period before alarm fires"
   type        = number

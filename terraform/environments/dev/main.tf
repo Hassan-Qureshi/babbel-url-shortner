@@ -151,6 +151,22 @@ module "cloudfront" {
   tags = var.tags
 }
 
+# -----------------------------------------------------------------------------
+# Monitoring
+# -----------------------------------------------------------------------------
 
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  environment            = var.environment
+  lambda_function_names  = module.lambda.function_names
+  dynamodb_table_name    = module.dynamodb.table_name
+  enable_alarms          = true
+  enable_latency_alarms  = false
+  alarm_email            = var.alarm_email
+  lambda_error_threshold = 5
+
+  tags = var.tags
+}
 
 
