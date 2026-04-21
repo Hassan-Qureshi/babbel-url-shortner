@@ -1,4 +1,4 @@
-github_repository = "Hassan-Qureshi/url-shortner"
+github_repository = "Hassan-Qureshi/babbel-url-shortner"
 
 tags = {
   Project = "url-shortener"
