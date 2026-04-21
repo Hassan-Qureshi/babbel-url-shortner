@@ -2,6 +2,21 @@
 
 > A serverless URL shortener on AWS built with **Python 3.13**, **Terraform**, **AWS Lambda**, and **DynamoDB** with github actions as cicd.
 
+## Note On Scope
+
+This solution is intentionally focused on clarity of infrastructure design, operational decisions, and follow-up technical discussion rather than full production hardening.
+
+The assignment requested the application code in **Go, Node.js, TypeScript, or Ruby**. In this implementation, the Lambda handlers were written in **Python**. This was a deliberate tradeoff to keep the request/response logic small and easy to review, and to use the limited exercise time on the areas most central to the role:
+
+- Terraform module structure
+- AWS service composition
+- CI/CD provisioning
+- multi-environment handling
+- monitoring and rollback
+- WAF and malicious traffic controls
+
+If this project were taken further, the most direct next step would be to port the Lambda handlers to **TypeScript** or **Go** while preserving the same infrastructure layout and operational model.
+
 ---
 
 ## Architecture
