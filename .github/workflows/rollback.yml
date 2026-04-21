@@ -11,6 +11,14 @@ on:
           - dev
           - staging
           - prod
+      target:
+        description: "Function target to roll back"
+        required: true
+        type: choice
+        options:
+          - both
+          - shorten
+          - redirect
       version:
         description: "Lambda version number to roll back to"
         required: true
@@ -41,7 +49,7 @@ jobs:
             echo "❌ smoke_test_code is required for prod rollback verification"
             exit 1
           fi
-          echo "Rolling back ${{ inputs.environment }} to version ${{ inputs.version }}"
+          echo "Rolling back target=${{ inputs.target }} in ${{ inputs.environment }} to version ${{ inputs.version }}"
 
       - name: Debug role ARN
         run: |
@@ -71,7 +79,13 @@ jobs:
 
       - name: Verify version exists
         run: |
-          for fn in shorten redirect; do
+          if [ "${{ inputs.target }}" = "both" ]; then
+            FUNCTIONS="shorten redirect"
+          else
+            FUNCTIONS="${{ inputs.target }}"
+          fi
+
+          for fn in $FUNCTIONS; do
             FUNC_NAME="url-shortener-${fn}-${{ inputs.environment }}"
             echo "Checking ${FUNC_NAME} version ${{ inputs.version }}..."
             aws lambda get-function \
@@ -82,6 +96,7 @@ jobs:
           done
 
       - name: Rollback shorten function
+        if: inputs.target == 'both' || inputs.target == 'shorten'
         run: |
           aws lambda update-alias \
             --function-name "url-shortener-shorten-${{ inputs.environment }}" \
@@ -90,6 +105,7 @@ jobs:
           echo "✅ shorten alias 'live' → version ${{ inputs.version }}"
 
       - name: Rollback redirect function
+        if: inputs.target == 'both' || inputs.target == 'redirect'
         run: |
           aws lambda update-alias \
             --function-name "url-shortener-redirect-${{ inputs.environment }}" \
@@ -99,7 +115,13 @@ jobs:
 
       - name: Verify rollback
         run: |
-          for fn in shorten redirect; do
+          if [ "${{ inputs.target }}" = "both" ]; then
+            FUNCTIONS="shorten redirect"
+          else
+            FUNCTIONS="${{ inputs.target }}"
+          fi
+
+          for fn in $FUNCTIONS; do
             FUNC_NAME="url-shortener-${fn}-${{ inputs.environment }}"
             CURRENT=$(aws lambda get-alias \
               --function-name "${FUNC_NAME}" \
@@ -119,7 +141,7 @@ jobs:
         run: terraform -chdir=terraform/environments/${{ inputs.environment }} init
 
       - name: Smoke test API
-        if: inputs.environment == 'dev' || inputs.environment == 'staging'
+        if: (inputs.environment == 'dev' || inputs.environment == 'staging') && (inputs.target == 'both' || inputs.target == 'shorten')
         run: |
           echo "Waiting 5s for alias propagation..."
           sleep 5
@@ -148,8 +170,21 @@ jobs:
 
           echo "✅ Smoke test passed"
 
+      - name: Smoke test redirect only non-prod
+        if: (inputs.environment == 'dev' || inputs.environment == 'staging') && inputs.target == 'redirect'
+        run: |
+          echo "Waiting 5s for alias propagation..."
+          sleep 5
+
+          API_URL=$(terraform -chdir=terraform/environments/${{ inputs.environment }} output -raw api_endpoint)
+
+          curl -sS -o /dev/null -D /tmp/redirect_only_headers "$API_URL/${{ inputs.smoke_test_code }}"
+          grep -q '^HTTP/.* 301' /tmp/redirect_only_headers
+
+          echo "✅ Redirect smoke test passed"
+
       - name: Smoke test redirect only
-        if: inputs.environment == 'prod'
+        if: inputs.environment == 'prod' && (inputs.target == 'both' || inputs.target == 'redirect')
         run: |
           echo "Waiting 5s for alias propagation..."
           sleep 5
