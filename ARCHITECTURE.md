@@ -88,7 +88,7 @@ Use **AWS Lambda** with the native Python runtime and zip deployment.
 
 ### Consequences
 
-- **+** Zero cost at zero traffic; perfect for dev/staging environments.
+- **+** Zero cost at zero traffic; perfect for dev environments.
 - **+** Automatic scaling from 0 to thousands of concurrent executions.
 - **+** No OS patching, no container image managemetn
 - **−** Cold starts add ~200–500 ms on first invocation (mitigated by Provisioned Concurrency in prod if needed).
@@ -336,7 +336,7 @@ data.tf          # Data sources
 tests/           # Not yet implemented
 ```
 
-Environments (`dev/`, `staging/`, `prod/`) compose modules with environment-specific sizing.
+Environments (`dev/`, `prod/`) compose modules with environment-specific sizing.
 
 ### Consequences
 
@@ -388,23 +388,23 @@ Changes must be validated progressively before reaching production to minimise b
 
 ### Decision
 
-Implement a **3-stage promotion pipeline**:
+Implement a **2-stage promotion pipeline**:
 
 ```
-dev (auto) → smoke test → staging (auto) → prod (manual approval gate)
+dev (auto) → smoke test → prod (manual approval gate)
 ```
 
-- **CI** (every PR): lint, type-check, test, terraform validate, trivy, checkov.
-- **CD** (push to main): build zips → deploy dev → smoke test → deploy staging → deploy prod.
+- **CI** (every PR): format check, type-check, terraform validate, trivy, checkov.
+- **CD** (push to main): build zips → deploy dev → smoke test → deploy prod.
 - **Authentication**: GitHub OIDC → AWS IAM role (no long-lived secrets).
 - **Prod gate**: Requires manual approval in the GitHub `production` environment.
 
 ### Consequences
 
-- **+** Every change is tested in dev and staging before prod.
+- **+** Every change is tested in dev before prod.
 - **+** OIDC eliminates long-lived AWS access keys.
 - **+** Security scans (trivy + checkov) block vulnerable infrastructure.
-- **−** Full pipeline takes ~10 minutes dev → prod (acceptable for this service).
+- **−** Production has one fewer promotion checkpoint before release.
 
 ---
 
@@ -455,5 +455,4 @@ The VPC contains:
 | 2026-04-19 | ADR-001 & ADR-002 | Added the modules for lambda and logic for read through cache                        |
 | 2026-04-19 | ADR-004           | Decided to use dynamodb as datastore and added the infra implementation & code logic |
 | 2026-04-19 | ADR-003           | Code fixes in case of cache miss or any errors                                       |
-
 

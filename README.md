@@ -46,7 +46,7 @@ terraform init && terraform apply
 url-shortner/
 │
 ├── lambda/                          # Python application
-│   ├── pyproject.toml               # Poetry project: deps, ruff, mypy, pytest
+│   ├── pyproject.toml               # Poetry project: deps, black, mypy, pytest
 │   ├── src/
 │   │   ├── shorten/
 │   │   │   ├── __init__.py
@@ -78,12 +78,11 @@ url-shortner/
 │   │   └── monitoring/              # Dashboard, alarms, SNS topic
 │   └── environments/
 │       ├── dev/                     # Smallest sizing, full WAF
-│       ├── staging/                 # Mirrors prod, lower capacity
 │       └── prod/                    # Multi-node Redis, PriceClass_All, tighter alarms
 │
 ├── .github/workflows/
 │   ├── ci.yml                       # PR: lint → type-check → test → tf validate → security scan
-│   └── deploy.yml                   # Push to main: build → dev → smoke → staging → prod (manual)
+│   └── deploy.yml                   # Push to main: build → dev → smoke → prod (manual)
 │
 ├── Makefile                         # Developer commands
 ├── ARCHITECTURE.md                  # Architecture Decision Records (ADRs)
@@ -159,8 +158,8 @@ Redirect to the original URL.
 | Target | Description |
 |--------|-------------|
 | `make install` | Install all Python dependencies via Poetry |
-| `make lint` | Lint with ruff |
-| `make format` | Auto-format with ruff |
+| `make lint` | Format check with black |
+| `make format` | Auto-format with black |
 | `make clean` | Remove build and dist directories |
 | `make zip` | Build Lambda deployment zips (shorten.zip + redirect.zip) |
 | `make apply ENV=dev` | Build zips, then `terraform init` + `apply` for the given environment |
@@ -180,7 +179,6 @@ aws logs tail /aws/lambda/url-shortener-redirect-dev --follow
 | Environment | Redis Nodes | Lambda Memory | WAF | Alarms | Price Class |
 |-------------|-------------|---------------|-----|--------|-------------|
 | **dev** | 1 × `cache.t4g.micro` | 256 MB | ✅ | ✅ (relaxed) | `PriceClass_100` |
-| **staging** | 2 × `cache.t4g.micro` | 512 MB | ✅ | ✅ | `PriceClass_100` |
 | **prod** | 2 × `cache.r7g.large` | 1 024 MB | ✅ (full rules + geo-block) | ✅ (tight: 3 errors, 500 ms p99) | `PriceClass_All` |
 
 ---
@@ -189,10 +187,10 @@ aws logs tail /aws/lambda/url-shortener-redirect-dev --follow
 
 ```
 PR opened
-  └─► python-ci ─► zip-build ─► terraform-ci ─► terraform-unit-test
+  └─► python-ci ─► zip-build ─► terraform-ci
 
 Push to main
-  └─► build ─► deploy-dev ─► smoke-test ─► deploy-staging ─► deploy-prod (manual gate)
+  └─► build ─► deploy-dev ─► smoke-test ─► deploy-prod (manual gate)
 ```
 
 - **Authentication:** OIDC federation, no long-lived AWS keys.
@@ -233,7 +231,7 @@ aws lambda update-alias --function-name url-shortener-redirect-dev --name live -
 ### Manual rollback (GitHub Actions)
 
 1. Go to **Actions → Rollback → Run workflow**
-2. Select the environment (`dev` / `staging` / `prod`)
+2. Select the environment (`dev` / `prod`)
 3. Enter the version number
 4. Click **Run workflow**
 
@@ -280,4 +278,3 @@ terraform -chdir=terraform/environments/<env> apply -refresh-only
 - **Bulk URL creation**: batch `POST /shorten` endpoint for importing many URLs at once
 - **X-Ray tracing**: flip `enable_xray_tracing = true` in Terraform and re-add `Tracer` to handlers
 - **Provisioned concurrency**: eliminate cold starts for prod redirect function
-
