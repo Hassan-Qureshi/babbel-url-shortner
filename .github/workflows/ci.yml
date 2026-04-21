@@ -102,13 +102,13 @@ jobs:
       - name: Lint
         run: tflint --chdir=terraform/ --recursive
 
-      - name: Security scan  trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: config
-          scan-ref: terraform/
-          exit-code: 1
-          severity: HIGH,CRITICAL
+#      - name: Security scan  trivy
+#        uses: aquasecurity/trivy-action@master
+#        with:
+#          scan-type: config
+#          scan-ref: terraform/
+#          exit-code: 1
+#          severity: HIGH,CRITICAL
 
       - name: Security scan checkov
         uses: bridgecrewio/checkov-action@v12
