@@ -26,11 +26,11 @@ variable "redirect_zip_path" {
 variable "alarm_email" {
   description = "Email address to receive alarm notifications"
   type        = string
-  default     = ""
+  default     = "alih.qureshi01@gmail.com"
 }
 
 variable "base_url" {
-  description = "Base URL for shortened links (e.g. https://short.example.com). Set to the CloudFront domain after first deploy."
+  description = "Base URL for shortened links (e.g. https://short.example.com)."
   type        = string
   default     = "https://localhost"
 }

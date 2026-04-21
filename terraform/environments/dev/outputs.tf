@@ -13,16 +13,6 @@ output "dynamodb_table_name" {
   value       = module.dynamodb.table_name
 }
 
-output "redis_endpoint" {
-  description = "ElastiCache Redis primary endpoint"
-  value       = module.elasticache.primary_endpoint
-}
-
-output "dashboard_name" {
-  description = "CloudWatch dashboard name"
-  value       = module.monitoring.dashboard_name
-}
-
 output "api_key_value" {
   description = "API key for POST /shorten (pass as x-api-key header)"
   value       = module.api_gateway.api_key_value
