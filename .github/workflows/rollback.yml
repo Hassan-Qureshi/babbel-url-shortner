@@ -12,8 +12,12 @@ on:
           - staging
           - prod
       version:
-        description: "Lambda version number to roll back to (run 'make list-versions ENV=xxx' to find it)"
+        description: "Lambda version number to roll back to"
         required: true
+        type: string
+      smoke_test_code:
+        description: "Known short code for redirect smoke testing in prod (optional for dev/staging)"
+        required: false
         type: string
 
 permissions:
@@ -25,10 +29,16 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment == 'prod' && 'production' || inputs.environment }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Validate inputs
         run: |
           if ! [[ "${{ inputs.version }}" =~ ^[0-9]+$ ]]; then
             echo "❌ VERSION must be a positive integer, got: ${{ inputs.version }}"
+            exit 1
+          fi
+          if [ "${{ inputs.environment }}" = "prod" ] && [ -z "${{ inputs.smoke_test_code }}" ]; then
+            echo "❌ smoke_test_code is required for prod rollback verification"
             exit 1
           fi
           echo "Rolling back ${{ inputs.environment }} to version ${{ inputs.version }}"
@@ -37,6 +47,10 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-deploy
           aws-region: eu-central-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
 
       - name: Verify version exists
         run: |
@@ -84,22 +98,39 @@ jobs:
           echo ""
           echo "✅ Rollback verified. Both functions on version ${{ inputs.version }}."
 
-      - name: Smoke test
+      - name: Terraform init
+        run: terraform -chdir=terraform/environments/${{ inputs.environment }} init
+
+      - name: Smoke test API
         if: inputs.environment == 'dev' || inputs.environment == 'staging'
         run: |
           echo "Waiting 5s for alias propagation..."
           sleep 5
-          # Quick health check invoke the shorten function
-          aws lambda invoke \
-            --function-name "url-shortener-shorten-${{ inputs.environment }}" \
-            --qualifier live \
-            --payload '{"httpMethod":"POST","path":"/shorten","headers":{},"body":"{\"url\":\"https://example.com/rollback-test\"}","isBase64Encoded":false,"requestContext":{"stage":"test","requestId":"rollback-test","identity":{"sourceIp":"127.0.0.1"}},"resource":"/shorten"}' \
-            /tmp/response.json
-          STATUS=$(cat /tmp/response.json | python3 -c "import sys,json; print(json.load(sys.stdin).get('statusCode','unknown'))")
-          echo "Response status: ${STATUS}"
-          if [ "${STATUS}" = "201" ] || [ "${STATUS}" = "400" ]; then
-            echo "✅ Smoke test passed (function is responding)"
-          else
-            echo "⚠️  Unexpected status ${STATUS} check logs"
-          fi
 
+          API_URL=$(terraform -chdir=terraform/environments/${{ inputs.environment }} output -raw api_endpoint)
+          API_KEY=$(terraform -chdir=terraform/environments/${{ inputs.environment }} output -raw api_key_value)
+
+          CREATE_RESPONSE=$(curl -sS -X POST "$API_URL/shorten" \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $API_KEY" \
+            -d '{"url":"https://example.com/rollback-test"}')
+
+          CODE=$(printf '%s' "$CREATE_RESPONSE" | python3 -c 'import json,sys; print(json.load(sys.stdin)["code"])')
+
+          curl -sS -o /dev/null -D /tmp/rollback_headers "$API_URL/$CODE"
+          grep -q '^HTTP/.* 301' /tmp/rollback_headers
+
+          echo "✅ Smoke test passed"
+
+      - name: Smoke test redirect only
+        if: inputs.environment == 'prod'
+        run: |
+          echo "Waiting 5s for alias propagation..."
+          sleep 5
+
+          API_URL=$(terraform -chdir=terraform/environments/prod output -raw api_endpoint)
+
+          curl -sS -o /dev/null -D /tmp/prod_rollback_headers "$API_URL/${{ inputs.smoke_test_code }}"
+          grep -q '^HTTP/.* 301' /tmp/prod_rollback_headers
+
+          echo "✅ Prod redirect smoke test passed"
